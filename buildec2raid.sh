@@ -159,11 +159,11 @@ confirm && {
 
 	     # Associate with Instance
 	     volume=`echo $createvolume | awk '{print$2}'`;
-        ec2-attach-volume $volume -i ${EC2INSTANCE} -d /dev/sdh${disk} || { echo "Association of volume $volume to instance ${EC2INSTANCE} failed! Exiting..."; exit 0; };
+        ec2-attach-volume $volume -i ${EC2INSTANCE} -d /dev/xvdh${disk} || { echo "Association of volume $volume to instance ${EC2INSTANCE} failed! Exiting..."; exit 0; };
 
    done;
 
-   echo -e "EC2 volumes creation is complete. You can now log into the instance and create the raid array:\n\tmdadm --create -l10 -n$DISKS /dev/md0 /dev/sdh*\n";
+   echo -e "EC2 volumes creation is complete. You can now log into the instance and create the raid array:\n\tmdadm --create -l10 -n$DISKS /dev/md0 /dev/xvdh*\n";
 
 }
 
