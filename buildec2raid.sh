@@ -29,7 +29,7 @@
 #  Usage
 # -------
 #
-#  buildraid.sh -s <size> -z <zone> -i <instance>
+#  buildec2raid.sh -s <size> -z <zone> -i <instance>
 #
 # 	 size - the usable size of the raid array (in GB)
 #  	 zone - the availability zone
@@ -39,7 +39,7 @@
 #  Example
 # ---------
 #
-#  ./buildraid.sh -s 1024 -z us-east-1a -i i-9i8u7y7y
+#  ./buildec2raid.sh -s 1024 -z us-east-1a -i i-9i8u7y7y
 #
 #      - this would create a 1TB array in us-east-1a attached to i-918u7y7y
 #
