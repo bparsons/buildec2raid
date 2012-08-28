@@ -159,7 +159,7 @@ confirm && {
 
 	     # Associate with Instance
 	     volume=`echo $createvolume | awk '{print$2}'`;
-        ec2-attach-volume $volume -i ${EC2INSTANCE} -d /dev/xvdh${disk} || { echo "Association of volume $volume to instance ${EC2INSTANCE} failed! Exiting..."; exit 0; };
+        ec2-attach-volume $volume -i ${EC2INSTANCE} -d /dev/sdh${disk} || { echo "Association of volume $volume to instance ${EC2INSTANCE} failed! Exiting..."; exit 0; };
 
    done;
 
