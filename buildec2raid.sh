@@ -29,19 +29,24 @@
 #  Usage
 # -------
 #
-#  buildec2raid.sh -s <size> -z <zone> -i <instance>
+#  buildec2raid.sh -s <size> -z <zone> -i <instance> [-o iops]
 #
 # 	 size - the usable size of the raid array (in GB)
 #  	 zone - the availability zone
 #  	 instance - the ec2 instance id to attach to
+#        iops (optional) - the requested number of I/O operations per second that the volume can support
 # 
 
-#  Example
-# ---------
+#  Examples
+# ----------
 #
 #  ./buildec2raid.sh -s 1024 -z us-east-1a -i i-9i8u7y7y
 #
 #      - this would create a 1TB array in us-east-1a attached to i-918u7y7y
+#
+#  ./buildec2raid.sh -s 128 -z us-east-1d -i i-715e8e8v -o 100
+#  
+#      - this would create a 128GB array in us-east-1d attached to i-715e8e8v with 100 IOPS per second provisioned for each volume in the array.
 #
 
 ##
@@ -79,7 +84,7 @@ confirm () {
 #
 usage() {
 
-	echo "Usage: $0 -s <size> -z <availability zone> -i <instance> (-h for help)"
+	echo -e "\nUsage: $0 -s <size> -z <availability zone> -i <instance> [-o <iops>] (-h for help)"
 
 }
 
@@ -92,16 +97,18 @@ usage() {
 
 # Process Command Line Args
 
-while getopts "s:z:i:h" optname
+while getopts "s:z:i:o:h" optname
 do
 
     case ${optname} in
          h|H) usage
 	      echo -e "\n\tRequired Arguments:\n"
-              echo -e "\t-s <size> - the usable size of the raid array (in GB)\n"
-	      echo -e "\t-z <zone> - the AWS availability zone\n"
-              echo -e "\t-i <instance> - the EC2 instance id to attach to\n"
-              echo -e ""
+              echo -e "\t-s <size> - the usable size of the raid array (in GB)"
+	      echo -e "\t-z <zone> - the AWS availability zone"
+              echo -e "\t-i <instance> - the EC2 instance id to attach to"
+              echo -e "\n\tOptional Arguments:\n"
+              echo -e "\t-o <iops> - the requested number of I/O operations per second that the volume can support"
+              echo -e "\n"
               exit 0
               ;;
          s|S) TOTALSIZE=${OPTARG}
@@ -109,6 +116,9 @@ do
          z|Z) AWSZONE=${OPTARG}
               ;;
          i|I) EC2INSTANCE=${OPTARG}
+              ;;
+         o|O) IOPS=${OPTARG}
+              PROVIOPS=1
               ;;
          * )  echo "No such option ${optname}."
               usage
@@ -130,7 +140,11 @@ done
 AWSINSTANCECHECK=`ec2-describe-instances | grep INSTANCE | awk '{printf " %s ",$2}' | grep $EC2INSTANCE | wc -c`
 [[ $AWSINSTANCECHECK -gt 3 ]] || { echo -e "Instance ID: $EC2INSTANCE not found. Check your credentials and the instance id.\n\n"; exit 0; }
 
-echo "Creating a $TOTALSIZE GB array in $AWSZONE for instance $EC2INSTANCE."
+echo -n "Creating a $TOTALSIZE GB array in $AWSZONE for instance $EC2INSTANCE"
+
+[[ $PROVIOPS -eq 1 ]] && { echo -e " with $IOPS I/O operations per second"; IOPSARGS="--type io1 --iops ${IOPS}"; }
+
+echo "."
 
 # Do the Math
 #
@@ -141,6 +155,12 @@ EACHDISK=`expr $CAPACITY / $DISKS`
 
 echo "This means a total of $CAPACITY GB in $DISKS disks of $EACHDISK GB each."
 
+##
+## TODO
+##
+## IOPS volumes must be at least 10GB in size
+##
+
 confirm && {
 
    echo "Creating EBS Volumes...";
@@ -150,7 +170,7 @@ confirm && {
 	     echo -en "\tCreating volume $disk of $DISKS...";
 
 	     # Create Volume
-	     createvolume=`ec2-create-volume --size ${EACHDISK} --availability-zone ${AWSZONE}` 
+	     createvolume=`ec2-create-volume --size ${EACHDISK} --availability-zone ${AWSZONE} ${IOPSARGS}` 
 
 	     # Did it work?
 	     [[ $createvolume && ${createvolume-x} ]] || { echo "Volume Creation Unsuccessful. Exiting." exit 0; }
