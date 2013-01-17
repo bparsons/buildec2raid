@@ -44,3 +44,7 @@ After completing the creation of the EBS volumes using this script, you can log 
      $ mdadm --create -l10 -n8 /dev/md0 /dev/xvdh*
 
 This creates a RAID 10 volume from the 8 disks. For more information on software raid, see https://raid.wiki.kernel.org/index.php/Linux_Raid
+
+## License
+
+This script is distributed under the MIT License (see LICENSE)
