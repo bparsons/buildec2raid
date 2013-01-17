@@ -181,7 +181,7 @@ echo "."
 CAPACITY=`expr $TOTALSIZE \* 2`
 EACHDISK=`expr $CAPACITY / $DISKS`
 
-echo "This means a total of $CAPACITY GB in $DISKS disks of $EACHDISK GB each."
+echo "This means a total of $CAPACITY GB in $DISKS disks of $EACHDISK GB each will be added to the instance as ${DRIVEID}1 - ${DRIVEID}$DISKS."
 
 # Error check: IOPS volumes must be at least 10GB in size
 [[ $PROVIOPS -eq 1 ]] && [[ $EACHDISK -lt 10 ]] && { echo -e "** IOPS Volumes must be at least 10GB in size. Increase the array size or reduce the number of disks (-n <disks>)\n\n"; exit 1; }
