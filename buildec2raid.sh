@@ -37,7 +37,7 @@
 ##       zone - the availability zone
 ##       instance - the ec2 instance id to attach to
 ##       drive letter (optional) - the drive letter to use in association with the instance (defaults to h)
-##       number of disks - the number of disks to create for the array (defaults to 8, minimum 4)
+##       number of disks (optional) - the number of disks to create for the array (defaults to 8, minimum 4)
 ##       iops (optional) - the requested number of I/O operations per second that the volume can support
 #
 
