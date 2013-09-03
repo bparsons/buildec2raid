@@ -48,3 +48,20 @@ This creates a RAID 10 volume from the 8 disks. For more information on software
 ## License
 
 This script is distributed under the MIT License (see LICENSE)
+
+## Migrating a RAID array to another instance
+
+Typically if you want to migrate data between hosts within the same availability zone, you would create a new array on the destination instance and copy or rsync the data over. 
+
+However the <strong>moveec2raid.sh</strong> script in this repository will migrate a RAID array to another instance. 
+
+The syntax is:
+
+     $  ./moveec2raid.sh -f <from instance> -t <to instance> -d <drive letter>
+
+All three fields are required. The drive letter is the drive identifier of the origin instance. ie. /dev/xvdh*.
+
+<em>The script assumes that all volumes mounted with that drive letter are part of your RAID array and they will be migrated in place.</em> If you used the <strong>buildec2raid.sh</strong> script, that is how the array is set up. 
+
+Make note of your <em>/etc/mdadm.conf</em> file as it contains the identification information for your array. 
+
