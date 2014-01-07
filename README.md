@@ -1,4 +1,3 @@
-
 # Build RAID 10 array in Amazon EC2
 
 Creates EBS volumes in Amazon EC2 and associates them with an EC2 instance for use as a RAID array
@@ -65,3 +64,5 @@ All three fields are required. The drive letter is the drive identifier of the o
 
 Make note of your <em>/etc/mdadm.conf</em> file as it contains the identification information for your array. 
 
+
+[![Analytics](https://ga-beacon.appspot.com/UA-24846718-5/buildec2raid/README.md)](https://github.com/igrigorik/ga-beacon)
