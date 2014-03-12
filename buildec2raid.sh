@@ -55,7 +55,7 @@
 
 ##
 ## The MIT License (MIT)
-## Copyright (c) 2012-2013 Brian Parsons
+## Copyright (c) 2012-2014 Brian Parsons
 ##
 ## Permission is hereby granted, free of charge, to any person obtaining a
 ## copy of this software and associated documentation files (the "Software"),
@@ -171,9 +171,9 @@ done
 [[ "${AWSZONES}" =~ " ${AWSZONE} " ]] || { echo -e "$AWSZONE is not a valid AWS zone.\n\nValid Zones: $AWSZONES\n"; exit 1; }
 
 # Do we have a valid DRIVEID
-driveidletters=`echo -n $DRIVEID | wc -c`
+driveidletters=$(echo -n $DRIVEID | wc -c)
 [[ $driveidletters -gt 1 ]] && { echo -e "Only specify one drive letter d-z."; exit 1; }
-driveidcheck=`echo $DRIVEID | grep [d-z] | wc -c`
+driveidcheck=$(echo $DRIVEID | grep [d-z] | wc -c)
 [[ $driveidcheck -gt 0 ]] || { echo -e "Drive Letter ${DRIVEID} is invalid. Please specify d-z."; exit 1; }
 
 # Do we have the minimum number of disks for RAID 10
@@ -181,7 +181,7 @@ driveidcheck=`echo $DRIVEID | grep [d-z] | wc -c`
 
 # Make sure the instance is in the same zone
 echo -n "Checking for instance $EC2INSTANCE in zone ${AWSZONE}..."
-AWSINSTANCECHECK=`ec2-describe-instances | grep INSTANCE | grep $EC2INSTANCE | grep ${AWSZONE} | wc -c`
+AWSINSTANCECHECK=$(ec2-describe-instances | grep INSTANCE | grep $EC2INSTANCE | grep ${AWSZONE} | wc -c)
 [[ $AWSINSTANCECHECK -gt 3 ]] || { echo -e "Instance ID: $EC2INSTANCE not found in ${AWSZONE}. Check your credentials, the instance id, and availability zone for the instance.\n\n"; exit 1; }
 
 echo "found."
@@ -192,8 +192,8 @@ echo -n "Creating a $TOTALSIZE GB array in $AWSZONE for instance $EC2INSTANCE"
 echo "."
 
 # Do the Math: 2X total capacity, each disk 2*(capacity)/(number of disks)
-CAPACITY=`expr $TOTALSIZE \* 2`
-EACHDISK=`expr $CAPACITY / $DISKS`
+CAPACITY=$(expr $TOTALSIZE \* 2)
+EACHDISK=$(expr $CAPACITY / $DISKS)
 
 echo -e "This means a total of $CAPACITY GB in $DISKS EBS volumes of $EACHDISK GB each will be added to the instance as sd${DRIVEID}1 - sd${DRIVEID}$DISKS.\n"
 
@@ -210,13 +210,13 @@ confirm && {
      echo -en "\tCreating volume $disk of $DISKS...";
 
      # Create Volume
-     createvolume=`ec2-create-volume --size ${EACHDISK} --availability-zone ${AWSZONE} ${IOPSARGS}`
+     createvolume=$(ec2-create-volume --size ${EACHDISK} --availability-zone ${AWSZONE} ${IOPSARGS})
      # exit if it didn't work
      [[ $createvolume && ${createvolume-x} ]] || { echo "Volume Creation Unsuccessful. Exiting." exit 1; }
 
      # Associate with Instance, exit if unsuccessful
      echo -en "Associating with instance...\n\t";
-     volume=`echo $createvolume | awk '{print$2}'`;
+     volume=$(echo $createvolume | awk '{print$2}');
      ec2-attach-volume $volume -i ${EC2INSTANCE} -d /dev/sd${DRIVEID}${disk} || { echo "Association of volume $volume to instance ${EC2INSTANCE} failed! Exiting..."; exit 1; };
 
    done;
