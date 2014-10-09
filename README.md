@@ -8,11 +8,8 @@ Creates EBS volumes in Amazon EC2 and associates them with an EC2 instance for u
 
 ec2-api-tools must be working and your environment variables set up:
 
-* AWS_USER_ID
-* AWS_ACCESS_KEY_ID
-* AWS_SECRET_ACCESS_KEY
-* EC2_PRIVATE_KEY
-* EC2_CERT
+* AWS_ACCESS_KEY
+* AWS_SECRET_KEY
 
 ##  Usage
 

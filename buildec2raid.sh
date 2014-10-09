@@ -21,11 +21,8 @@
 ##
 ##  ec2-api-tools must be working and your environment variables set up:
 ##
-##    AWS_USER_ID
-##    AWS_ACCESS_KEY_ID
-##    AWS_SECRET_ACCESS_KEY
-##    EC2_PRIVATE_KEY
-##    EC2_CERT
+##    AWS_ACCESS_KEY
+##    AWS_SECRET_KEY
 #
 
 ##  Usage
@@ -119,11 +116,8 @@ usage() {
 }
 
 # Check for AWS Environment Vars as we can't do much without them
-[[ $AWS_USER_ID && ${AWS_USER_ID-x} ]] || { echo  "AWS_USER_ID not defined. Please set up your AWS credentials. See http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?SettingUp_CommandLine.html for more information."; exit 1; }
-[[ $AWS_ACCESS_KEY_ID && ${AWS_ACCESS_KEY_ID-x} ]] || { echo  "AWS_ACCESS_KEY_ID not defined. Please set up your AWS credentials. See http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?SettingUp_CommandLine.html for more information."; exit 1; }
-[[ $AWS_SECRET_ACCESS_KEY && ${AWS_SECRET_ACCESS_KEY-x} ]] || { echo  "AWS_SECRET_ACCESS_KEY not defined. Please set up your AWS credentials. See http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?SettingUp_CommandLine.html for more information."; exit 1; }
-[[ $EC2_PRIVATE_KEY && ${EC2_PRIVATE_KEY-x} ]] || { echo  "EC2_PRIVATE_KEY not defined. Please set up your AWS credentials. See http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?SettingUp_CommandLine.html for more information."; exit 1; }
-[[ $EC2_CERT && ${EC2_CERT-x} ]] || { echo  "AWS_USER_ID not defined. Please set up your AWS credentials. See http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?SettingUp_CommandLine.html for more information."; exit 1; }
+[[ $AWS_ACCESS_KEY && ${AWS_ACCESS_KEY-x} ]] || { echo  "AWS_ACCESS_KEY not defined. Please set up your AWS credentials. See http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?SettingUp_CommandLine.html for more information."; exit 1; }
+[[ $AWS_SECRET_KEY && ${AWS_SECRET_KEY-x} ]] || { echo  "AWS_SECRET_KEY not defined. Please set up your AWS credentials. See http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?SettingUp_CommandLine.html for more information."; exit 1; }
 
 # Process Command Line Args
 while getopts ":d:s:z:i:n:o:h" optname
@@ -214,6 +208,9 @@ confirm && {
      # exit if it didn't work
      [[ $createvolume && ${createvolume-x} ]] || { echo "Volume Creation Unsuccessful. Exiting." exit 1; }
 
+     # pause to allow amazon's api to catch up
+     sleep 4
+
      # Associate with Instance, exit if unsuccessful
      echo -en "Associating with instance...\n\t";
      volume=$(echo $createvolume | awk '{print$2}');
@@ -224,5 +221,3 @@ confirm && {
    echo -e "EC2 volumes creation is complete. You can now log into the instance and create the raid array:\n\tmdadm --create -l10 -n$DISKS /dev/md0 /dev/xvd${DRIVEID}*\n";
 
 }
-
-
