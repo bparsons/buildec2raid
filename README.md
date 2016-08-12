@@ -13,7 +13,7 @@ ec2-api-tools must be working and your environment variables set up:
 
 ##  Usage
 
-     $ buildec2raid.sh -s <size> -z <zone> -i <instance> [-d drive letter] [-n number of disks] [-o iops]
+     $ buildec2raid.sh -s <size> -z <zone> -i <instance> [-d drive letter] [-n number of disks] [-o iops] -v 
 
 * size - the usable size of the raid array (in GB)
 * zone - the availability zone
@@ -21,6 +21,7 @@ ec2-api-tools must be working and your environment variables set up:
 * drive letter (optional) - the drive letter to use in association with the instance (defaults to h)
 * number of disks (optional) - the number of disks to create for the array (defaults to 8, minimum 4)
 * iops (optional) - the requested number of I/O operations per second that the volume can support
+* -v to specify HVM instances (HVM uses a different drive assignment scheme)
 
 ##  Example
 
@@ -35,7 +36,7 @@ This would create a 1TB array in us-east-1a attached to i-9i8u7y7y using 6 drive
 
 ## More information
 
-After completing the creation of the EBS volumes using this script, you can log into the instance and initialize the raid array:
+After completing the creation of the EBS volumes using this script, you can log into the instance and initialize the raid array. For example:
 
      $ mdadm --create -l10 -n8 /dev/md0 /dev/xvdh*
 

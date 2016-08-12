@@ -28,7 +28,7 @@
 ##  Usage
 ## -------
 ##
-##  buildec2raid.sh -s <size> -z <zone> -i <instance> [-d drive letter] [-n number of disks] [-o iops]
+##  buildec2raid.sh -s <size> -z <zone> -i <instance> [-d drive letter] [-n number of disks] [-o iops] [-v]
 ##
 ##       size - the usable size of the raid array (in GB)
 ##       zone - the availability zone
@@ -36,7 +36,8 @@
 ##       drive letter (optional) - the drive letter to use in association with the instance (defaults to h)
 ##       number of disks (optional) - the number of disks to create for the array (defaults to 8, minimum 4)
 ##       iops (optional) - the requested number of I/O operations per second that the volume can support
-#
+##       -v to specify HVM instance (uses a different drive assignment scheme)
+##
 
 ##  Examples
 ## ----------
@@ -77,14 +78,17 @@
 ## VARIABLES
 #
 
-# List of valid AWS Zones
-AWSZONES=" us-east-1a us-east-1b us-east-1d us-east-1e us-west-1a us-west-1b us-west-1c us-west-2a us-west-2b us-west-2c eu-west-1a eu-west-1b eu-west-1c ap-southeast-1a ap-southeast-1b ap-northeast-1a ap-northeast-1b sa-east-1a sa-east-1b "
-
 # Default Number of Disks for the array (8 is considered ideal)
 DISKS=8
 
 # Default Drive ID
 DRIVEID="h"
+
+# Is HVM
+HVM=0
+
+# IOPS
+PROVIOPS=0
 
 ##
 ## END VARIABILE DEFINITIONS
@@ -111,7 +115,7 @@ confirm () {
 #
 usage() {
 
-    echo -e "\nUsage: $0 -s <size> -z <availability zone> -i <instance> [-d <drive letter>] [-n <disks>] [-o <iops>] (-h for help)"
+    echo -e "\nUsage: $0 -s <size> -z <availability zone> -i <instance> [-d <drive letter>] [-n <disks>] [-o <iops>] -v (-h for help)"
 
 }
 
@@ -120,19 +124,20 @@ usage() {
 [[ $AWS_SECRET_KEY && ${AWS_SECRET_KEY-x} ]] || { echo  "AWS_SECRET_KEY not defined. Please set up your AWS credentials. See http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?SettingUp_CommandLine.html for more information."; exit 1; }
 
 # Process Command Line Args
-while getopts ":d:s:z:i:n:o:h" optname
+while getopts ":d:s:z:i:n:o:h:v" optname
 do
 
     case ${optname} in
          h|H) usage
               echo -e "\n\tRequired Arguments:\n"
               echo -e "\t-s <size> - the usable size of the raid array (in GB)"
-              echo -e "\t-z <zone> - the AWS availability zone"
+              echo -e "\t-z <region> - the AWS region"
               echo -e "\t-i <instance> - the EC2 instance id to attach to"
               echo -e "\n\tOptional Arguments:\n"
               echo -e "\t-d <drive> - the drive identifier to use (defaults to h)"
               echo -e "\t-n <number of disks> - the number of disks to create in the array (defaults to 8)"
               echo -e "\t-o <iops> - the requested number of I/O operations per second that the volume can support"
+              echo -e "\t-v specify HVM instance (otherwise defaults to pv)"
               echo -e "\n"
               exit 0
               ;;
@@ -149,6 +154,8 @@ do
               ;;
          d|D) DRIVEID=${OPTARG}
               ;;
+         v|V) HVM=1
+              ;;
          * )  echo "No such option ${optname}."
               usage
               exit 1
@@ -161,8 +168,12 @@ done
 [[ $AWSZONE && ${AWSZONE-x} ]] || { echo "No AWS Zone given"; usage; exit 1; }
 [[ $EC2INSTANCE && ${EC2INSTANCE-x} ]] || { echo "No EC2 Instance given"; usage; exit 1; }
 
-# Check AWS Zone for validity
-[[ "${AWSZONES}" =~ " ${AWSZONE} " ]] || { echo -e "$AWSZONE is not a valid AWS zone.\n\nValid Zones: $AWSZONES\n"; exit 1; }
+# Get list of AWS regions
+AWSZONES=$(ec2-describe-availability-zones | grep ${AWSZONE} | awk '{printf("%s:%s", $2, $4)}')
+# Check given AWS region for validity
+[[ "${AWSZONES}" =~ "${AWSZONE}" ]] || { echo -e "$AWSZONE is not a valid AWS zone.\n\nValid Zones: $AWSZONES\n"; exit 1; }
+AWSREGION=$(echo ${AWSZONES} | awk -F: '{print$2}')
+echo "$AWSZONE found in region $AWSREGION"
 
 # Do we have a valid DRIVEID
 driveidletters=$(echo -n $DRIVEID | wc -c)
@@ -174,8 +185,10 @@ driveidcheck=$(echo $DRIVEID | grep [d-z] | wc -c)
 [[ $DISKS -gt 3 ]] || { echo -e "You need at least 4 disks for RAID10."; exit 1; }
 
 # Make sure the instance is in the same zone
-echo -n "Checking for instance $EC2INSTANCE in zone ${AWSZONE}..."
-AWSINSTANCECHECK=$(ec2-describe-instances | grep INSTANCE | grep $EC2INSTANCE | grep ${AWSZONE} | wc -c)
+echo -n "Checking for instance $EC2INSTANCE in region ${AWSZONE}..."
+# Get AWS endpoint for region
+AWSURL=$(ec2-describe-regions | grep ${AWSREGION} | awk '{print$3}')
+AWSINSTANCECHECK=$(ec2-describe-instances --region ${AWSREGION} | grep INSTANCE | grep $EC2INSTANCE | wc -c)
 [[ $AWSINSTANCECHECK -gt 3 ]] || { echo -e "Instance ID: $EC2INSTANCE not found in ${AWSZONE}. Check your credentials, the instance id, and availability zone for the instance.\n\n"; exit 1; }
 
 echo "found."
@@ -189,13 +202,14 @@ echo "."
 CAPACITY=$(expr $TOTALSIZE \* 2)
 EACHDISK=$(expr $CAPACITY / $DISKS)
 
-echo -e "This means a total of $CAPACITY GB in $DISKS EBS volumes of $EACHDISK GB each will be added to the instance as sd${DRIVEID}1 - sd${DRIVEID}$DISKS.\n"
+echo -e "This means a total of $CAPACITY GB in $DISKS EBS volumes of $EACHDISK GB each will be added to the instance.\n"
 
 # Error check: IOPS volumes must be at least 10GB in size
 [[ $PROVIOPS -eq 1 ]] && [[ $EACHDISK -lt 10 ]] && { echo -e "** EBS volumes with IOPS must be at least 10GB in size. Increase the array size or reduce the number of disks (-n <disks>)\n\n"; exit 1; }
 
 confirm && {
 
+   DISKARRAY=""
    echo "Creating EBS Volumes...";
 
    for (( disk=1; disk<=$DISKS; disk++));
@@ -203,21 +217,30 @@ confirm && {
 
      echo -en "\tCreating volume $disk of $DISKS...";
 
-     # Create Volume
+     # Create Volumes
      createvolume=$(ec2-create-volume --size ${EACHDISK} --availability-zone ${AWSZONE} ${IOPSARGS})
      # exit if it didn't work
      [[ $createvolume && ${createvolume-x} ]] || { echo "Volume Creation Unsuccessful. Exiting." exit 1; }
 
      # pause to allow amazon's api to catch up
      sleep 4
-
-     # Associate with Instance, exit if unsuccessful
+ 
+      # Associate with Instance, exit if unsuccessful
      echo -en "Associating with instance...\n\t";
      volume=$(echo $createvolume | awk '{print$2}');
-     ec2-attach-volume $volume -i ${EC2INSTANCE} -d /dev/sd${DRIVEID}${disk} || { echo "Association of volume $volume to instance ${EC2INSTANCE} failed! Exiting..."; exit 1; };
+     if [[ $HVM -eq 0 ]]
+     then
+        ec2-attach-volume $volume -i ${EC2INSTANCE} -d /dev/sd${DRIVEID}${disk} || { echo "Association of volume $volume to instance ${EC2INSTANCE} as /dev/sd${DRIVEID}${disk} failed! Exiting..."; exit 1; };
+        DISKARRAY='$DISKARRAY /dev/sd$DRIVEID$disk'
+     else
+        ec2-attach-volume $volume -i ${EC2INSTANCE} -d /dev/sd${DRIVEID} || { echo "Association of volume $volume to instance ${EC2INSTANCE} as /dev/sd/${DRIVEID} failed! Exiting..."; exit 1; };
+        DISKARRAY='$DISKARRAY /dev/xvd$DRIVEID'
+        newdriveletter=$(echo ${DRIVEID} | perl -nle 'print ++$_')
+        DRIVEID=${newdriveletter}
+     fi
 
    done;
 
-   echo -e "EC2 volumes creation is complete. You can now log into the instance and create the raid array:\n\tmdadm --create -l10 -n$DISKS /dev/md0 /dev/xvd${DRIVEID}*\n";
+   echo -e "EC2 volumes creation is complete. You can now log into the instance and create the raid array:\n\tmdadm --create -l10 -n$DISKS /dev/md0 $DISKARRAY\n";
 
 }
