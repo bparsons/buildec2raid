@@ -19,9 +19,9 @@ ec2-api-tools must be working and your environment variables set up:
 * zone - the availability zone
 * instance - the ec2 instance id to attach to
 * drive letter (optional) - the drive letter to use in association with the instance (defaults to h)
-* number of disks (optional) - the number of disks to create for the array (defaults to 8, minimum 4)
+* number of disks (optional) - the number of disks to create for the array (defaults to 4)
 * iops (optional) - the requested number of I/O operations per second that the volume can support
-* -v to specify HVM instances (HVM uses a different drive assignment scheme)
+* -v to specify PV instances (HVM instances use a different drive assignment scheme than PV)
 
 ##  Example
 
@@ -40,7 +40,7 @@ After completing the creation of the EBS volumes using this script, you can log 
 
      $ mdadm --create -l10 -n8 /dev/md0 /dev/xvdh*
 
-This creates a RAID 10 volume from the 8 disks. For more information on software raid, see https://raid.wiki.kernel.org/index.php/Linux_Raid
+This creates a RAID 10 volume from 8 EBS disks. For more information on software raid, see https://raid.wiki.kernel.org/index.php/Linux_Raid
 
 ## License
 
