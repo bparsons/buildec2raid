@@ -78,14 +78,14 @@
 ## VARIABLES
 #
 
-# Default Number of Disks for the array (8 is considered ideal)
-DISKS=8
+# Default Number of Disks for the array
+DISKS=4
 
 # Default Drive ID
 DRIVEID="h"
 
 # Is HVM
-HVM=0
+HVM=1
 
 # IOPS
 PROVIOPS=0
@@ -135,9 +135,9 @@ do
               echo -e "\t-i <instance> - the EC2 instance id to attach to"
               echo -e "\n\tOptional Arguments:\n"
               echo -e "\t-d <drive> - the drive identifier to use (defaults to h)"
-              echo -e "\t-n <number of disks> - the number of disks to create in the array (defaults to 8)"
+              echo -e "\t-n <number of disks> - the number of disks to create in the array (defaults to 4)"
               echo -e "\t-o <iops> - the requested number of I/O operations per second that the volume can support"
-              echo -e "\t-v specify HVM instance"
+              echo -e "\t-v specify PV instance (Defaults to HVM without this flag)"
               echo -e "\n"
               exit 0
               ;;
@@ -154,7 +154,7 @@ do
               ;;
          d|D) DRIVEID=${OPTARG}
               ;;
-         v|V) HVM=1
+         v|V) HVM=0
               ;;
          * )  echo "No such option ${optname}."
               usage
